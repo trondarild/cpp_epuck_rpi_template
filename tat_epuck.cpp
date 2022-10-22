@@ -18,6 +18,29 @@
 #define ROBOT_ADDR 0x1F
 #define I2C_CHANNEL "/dev/i2c-12"
 #define LEGACY_I2C_CHANNEL "/dev/i2c-4"
+/*
+ *
+ 
+actuators_data[0] = 0;		// Left speed: 512
+actuators_data[1] = 2;
+actuators_data[2] = 0;		// Right speed: -512
+actuators_data[3] = 0xFE;
+actuators_data[4] = 0; 		// Speaker sound
+actuators_data[5] = 0x0F;	// LED1, LED3, LED5, LED7 on/off flag
+actuators_data[6] = 100;	// LED2 red
+actuators_data[7] = 0;		// LED2 green
+actuators_data[8] = 0;		// LED2 blue
+actuators_data[9] = 100;	// LED4 red
+actuators_data[10] = 0;		// LED4 green
+actuators_data[11] = 0;		// LED4 blue
+actuators_data[12] = 100;	// LED6 red
+actuators_data[13] = 0;		// LED6 green
+actuators_data[14] = 0;		// LED6 blue
+actuators_data[15] = 100;	// LED8 red
+actuators_data[16] = 0;		// LED8 green
+actuators_data[17] = 0;		// LED8 blue
+actuators_data[18] = 0; 	// settings.
+*/
 
 
 /** Constructur
@@ -65,6 +88,33 @@ EPuck::tick(){
 	// todo assemble updates
 	update_robot_sensors_and_actuators(); 
 
+		
+	uint8_t checksum = 0;
+	for(int i=0; i<(SENSORS_SIZE-1); i++) {
+		checksum ^= sensors_data[i];
+	}
+	if(checksum == sensors_data[SENSORS_SIZE-1]) {
+			for(int i=0; i<8; i++) {
+				prox[i] = sensors_data[i*2+1]*256+sensors_data[i*2];
+			}
+			//printf("prox: %.4d, %.4d, %.4d, %.4d, %.4d, %.4d, %.4d, %.4d\r\n", prox[0], prox[1], prox[2], prox[3], prox[4], prox[5], prox[6], prox[7]);
+			for(int i=0; i<8; i++) {
+				prox_amb[i] = sensors_data[16+i*2+1]*256+sensors_data[16+i*2];
+			}
+			//printf("ambient: %.4d, %.4d, %.4d, %.4d, %.4d, %.4d, %.4d, %.4d\r\n", prox_amb[0], prox_amb[1], prox_amb[2], prox_amb[3], prox_amb[4], prox_amb[5], prox_amb[6], prox_amb[7]);			
+			for(int i=0; i<4; i++) {
+				mic[i] = sensors_data[32+i*2+1]*256+sensors_data[32+i*2];
+			}
+			//printf("mic: %.4d, %.4d, %.4d, %.4d\r\n", mic[0], mic[1], mic[2], mic[3]);
+			//printf("sel: %.2d\r\n", sensors_data[40]&0x0F);
+			//printf("button: %.1d\r\n", sensors_data[40]>>4);
+			for(int i=0; i<4; i++) {
+				mot_steps[i] = sensors_data[41+i*2+1]*256+sensors_data[41+i*2];
+			}
+			//printf("steps: %.4d, %.4d\r\n", mot_steps[0], mot_steps[1]);
+			//printf("tv: %.2d\r\n", sensors_data[45]);
+	}
+
 }
 
 
@@ -80,7 +130,7 @@ EPuck::update_robot_sensors_and_actuators() {
     messages[0].flags = 0;
     messages[0].len   = ACTUATORS_SIZE;
     messages[0].buf   = (char*)actuators_data;
-	
+	// get the sensor data	
     messages[1].addr  = ROBOT_ADDR;
     messages[1].flags = I2C_M_RD;
     messages[1].len   = SENSORS_SIZE;
