@@ -79,8 +79,12 @@ EPuck::~EPuck(){
 }
 
 void
-EPuck::setLED1(FloatList &colors){
+EPuck::setLED1(bool on){
 	// todo
+	if(on)
+	actuators_data[5] = 0x0F;	// LED1, LED3, LED5, LED7 on/off flag
+	else
+	actuators_data[5] = 0x0;	// LED1, LED3, LED5, LED7 on/off flag
 }
 
 void

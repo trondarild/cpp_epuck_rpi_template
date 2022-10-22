@@ -28,7 +28,7 @@ public:
 	~EPuck();
 
 	//state
-	void setLED1(FloatList &colors);
+	void setLED1(bool on);
 
 	//update
 	void tick();
