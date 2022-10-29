@@ -28,7 +28,15 @@ public:
 	~EPuck();
 
 	//state
+	void getProxui(uint16_t *r);
+	void getProxf(float *r);
+
 	void setLED1(bool on);
+	void setLED2(uint r, uint g, uint b);
+
+	//sizes
+	int getNumProx(){return 8;}
+	int getNumMics(){return 4;}
 
 	//update
 	void tick();

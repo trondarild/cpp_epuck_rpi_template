@@ -14,10 +14,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <iostream>
 
 #define ROBOT_ADDR 0x1F
 #define I2C_CHANNEL "/dev/i2c-12"
 #define LEGACY_I2C_CHANNEL "/dev/i2c-4"
+const int cNumProx = 8;
 /*
  *
  
@@ -57,6 +59,7 @@ EPuck::EPuck(){
 	int fh1 = open("/dev/i2c-1", O_RDWR);
 	if(ioctl(fh1, I2C_TIMEOUT, 2) < 0) {
 		perror("fail to set i2c1 timeout");
+		std::cout << "fail to set i2c1 timeout\n";
 	}		
 	close(fh1);
 
@@ -65,18 +68,34 @@ EPuck::EPuck(){
 		fh = open(LEGACY_I2C_CHANNEL, O_RDWR);	
 		if(fh < 0) {
 			perror("Cannot open I2C device");
+			std::cout << "Cannot open I2C device\n";
 			// return -1;
 		}
 	}
 
 	ioctl(fh, I2C_SLAVE, ROBOT_ADDR);			// tell the driver we want the device with address 0x1F (7-bits) on the I2C bus
-
+	std::cout << "Initialized epuck.\n";
 }
 
 /** Destructor
  */
 EPuck::~EPuck(){
 }
+
+// get
+void 
+EPuck::getProxui(uint16_t *r){
+	for(int i=0; i<cNumProx; ++i)
+		r[i] = prox[i];
+}
+
+void 
+EPuck::getProxf(float *r){
+	for(int i=0; i<cNumProx; ++i)
+		r[i] = (float)prox[i]/4096.0;
+}
+
+// set
 
 void
 EPuck::setLED1(bool on){
@@ -85,15 +104,29 @@ EPuck::setLED1(bool on){
 	actuators_data[5] = 0x0F;	// LED1, LED3, LED5, LED7 on/off flag
 	else
 	actuators_data[5] = 0x0;	// LED1, LED3, LED5, LED7 on/off flag
+	std::cout << "changed LED1: " << on << "\n"; 
 }
+
+void 
+EPuck::setLED2(uint r, uint g, uint b){
+	actuators_data[6] = r;	// LED2 red
+	actuators_data[7] = g;		// LED2 green
+	actuators_data[8] = b;		// LED2 blue
+}
+
 
 void
 EPuck::tick(){
 	// todo assemble updates
+	uint8_t checksum = 0;
+	for(int i=0; i<(ACTUATORS_SIZE-1); i++) {
+		checksum ^= actuators_data[i];
+	}
+	actuators_data[ACTUATORS_SIZE-1] = checksum;
 	update_robot_sensors_and_actuators(); 
 
 		
-	uint8_t checksum = 0;
+	checksum = 0;
 	for(int i=0; i<(SENSORS_SIZE-1); i++) {
 		checksum ^= sensors_data[i];
 	}
